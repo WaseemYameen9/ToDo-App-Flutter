@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:todo/slashscreen.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Todo App',
+      title: 'Todo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.cyan,
       ),
-      home: const MyHomePage(),
+      home: splashscreen(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -30,126 +31,115 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var todoText = TextEditingController();
-  var arr = [];
+  List<String> arr = [];
 
+  @override
+  void initState() {
+    super.initState();
+    loadListFromSharedPreferences(); // Load the list from shared preferences when the widget initializes
+  }
+
+  // Function to load the list from shared preferences
+  Future<void> loadListFromSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList('todo');
+    if (list != null) {
+      setState(() {
+        arr = list;
+      });
+    }
+  }
+
+  // Function to save the list to shared preferences
+  Future<void> saveListToSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('todo', arr);
+  }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-        appBar: AppBar(
-
-          title: Center(child: Text("TODO",style: TextStyle(color: Colors.white)),),
-        ),
-        body: Column(
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade300,
+        title: const Center(
+            child: Text("TODO List", style: TextStyle(color: Colors.white))),
+      ),
+      body: Container(
+        color: Colors.blue.shade50,
+        child: Column(
           children: [
-
-            Container(
-              height: 50,
-              color: Colors.purple,
-              child: Row(
-                children: [
-                  Container(
-                    width: 250,
-                    child: Text("What are you doing Today?",style: TextStyle(fontSize: 20,color: Colors.white)),
-                  ),
-                  Container(
-                    margin: EdgeInsets.only(left: 70),
-                    child: CircleAvatar(
-                      backgroundImage: ExactAssetImage('assets/was.jpg'),
-                    ),
-                  )
-                ],
-              ),
-            ),
-            Container(
-              child: Center(child: Text('TODO List',style: TextStyle(fontSize: 20,color: Colors.white),)),
-              height: 50,
-              width: 130,
-              margin: EdgeInsets.only(top: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                color: Colors.blue,
-              ),
-
-            ),
-
-            Container(
-              margin: EdgeInsets.only(top: 20),
-              child: Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-
-                  ),
-                  title: Text("Hardwork Pays off"),
-
-                ),
-              ),
-            ),
-
+            const SizedBox(height: 30),
             Expanded(
               child: Container(
-                margin: EdgeInsets.only(top: 20),
+                color: Colors.blue.shade50,
+                margin: const EdgeInsets.only(top: 20),
                 child: Card(
+                  elevation: 0,
+                  color: Colors.blue.shade50,
                   child: ListView.builder(
                     itemCount: arr.length,
                     itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: CircleAvatar(),
-                        title: Text(arr[index]),
+                      return Card(
+                        elevation: 2,
+                        child: ListTile(
+                          tileColor: Colors.indigo.shade200,
+                          leading: const Icon(
+                            Icons.forward,
+                            color: Colors.blue,
+                            size: 30,
+                          ),
+                          title: Text(arr[index]),
+                          trailing: IconButton(
+                              icon:Icon(Icons.delete), onPressed: () {
+                                arr.removeAt(index);
+                                setState(() {
+                                  saveListToSharedPreferences();
+                                });
+                          },),
+
+                        ),
                       );
                     },
                   ),
                 ),
               ),
             ),
-
-
-
             Container(
-              margin: EdgeInsets.only(top: 30),
+              margin: const EdgeInsets.only(top: 30),
               child: Card(
                 child: TextField(
                   controller: todoText,
-                  decoration: InputDecoration(
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(5),
-                          borderSide: BorderSide(
-                            color: Colors.blue,
-                          )
-                      ),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(5),
-                          borderSide: BorderSide(
-                            color: Colors.black,
-                          )
-                      )
-
-
+                  decoration: const InputDecoration(
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                      borderSide: BorderSide(color: Colors.black),
+                    ),
                   ),
                 ),
               ),
             ),
+            const SizedBox(height: 11),
             Container(
-              width: 50,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(25)
-              ),
-              margin: EdgeInsets.only(left: 300),
-              child: ElevatedButton(
-                child: Text("+"),
-                onPressed: (){
-                  arr.add(todoText.text.toString());
-                  todoText.clear();
+              margin: const EdgeInsets.only(left: 280),
+              child: FloatingActionButton(
+                onPressed: () {
                   setState(() {
-
+                    arr.add(todoText.text.toString());
+                    todoText.clear();
+                    saveListToSharedPreferences(); // Save the list to shared preferences after adding an item
                   });
                 },
+                child: const Text('+'),
+                backgroundColor: Colors.blue.shade300,
               ),
-
             )
           ],
-        )
+        ),
+      ),
     );
   }
 }
